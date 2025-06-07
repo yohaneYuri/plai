@@ -4,6 +4,7 @@ pub fn calculate(expr: Expr) -> i32 {
     match expr {
         Expr::Num(num) => num,
         Expr::Plus(l, r) => calculate(*l) + calculate(*r),
+        Expr::Parened(expr) => calculate(*expr),
     }
 }
 

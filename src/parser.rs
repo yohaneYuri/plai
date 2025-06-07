@@ -64,6 +64,14 @@ impl<'src> Parser<'src> {
             return Ok(Expr::Plus(left, right));
         }
 
+        if self.match_token(Token::LeftParen)? {
+            self.consume(Token::LeftParen)?;
+            let parened = Box::new(self.parse_expr()?);
+            self.consume(Token::RightParen)?;
+
+            return Ok(Expr::Parened(parened));
+        }
+
         Ok(Expr::Num(self.parse_int()?))
     }
 
@@ -82,6 +90,8 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
+    use crate::eval::calculate;
+
     use super::*;
 
     #[test]
@@ -101,5 +111,30 @@ mod tests {
             Expr::Plus(Box::new(Expr::Num(1)), Box::new(Expr::Num(2))),
             parser.parse_expr().unwrap()
         );
+    }
+
+    #[test]
+    fn parened_expr() {
+        let lexer = Lexer::new("(+ 1 (+ 2 3))");
+        let mut parser = Parser::new(lexer);
+
+        assert_eq!(
+            Expr::Parened(Box::new(Expr::Plus(
+                Box::new(Expr::Num(1)),
+                Box::new(Expr::Parened(Box::new(Expr::Plus(
+                    Box::new(Expr::Num(2)),
+                    Box::new(Expr::Num(3))
+                ))))
+            ))),
+            parser.parse_expr().unwrap()
+        );
+    }
+
+    #[test]
+    fn eval_str_expr() {
+        let lexer = Lexer::new("+ 1 (+ 2 (+ 3 4))");
+        let mut parser = Parser::new(lexer);
+
+        assert_eq!(10, calculate(parser.parse_expr().unwrap()));
     }
 }
